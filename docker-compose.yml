@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  app_prod:
+    environment:
+      - APP_SETTINGS=config.ProductionConfig
+      - FLASK_APP=app/__init__.py
+      - REDIS_URL=redis://redis:6379/0
+
+    build:
+     context: .
+     dockerfile: Dockerfile
+
+    depends_on:
+      - redis
+
+
+  app_dev:
+    environment:
+      - APP_SETTINGS=config.DevelopmentConfig
+      - FLASK_APP=app/__init__.py
+      - REDIS_URL=redis://redis:6379/0
+
+    build:
+     context: .
+     dockerfile: Dockerfile-dev
+
+    ports:
+      - "5000:5000"
+
+    depends_on:
+      - redis
+
+
+  redis:
+    image: 'redis:alpine'
