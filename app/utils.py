@@ -19,3 +19,11 @@ def calculate_points_distance(lat1, lon1, lat2, lon2):
     distance = R * c
 
     return distance
+
+if __name__ == '__main__':
+    p1 = (49.843644, 24.026498)
+    p2 = (49.843443, 24.026578)
+    p3 = (49.839109, 24.030677)
+    p4 = (49.838678, 24.030268)
+
+    print(calculate_points_distance(*p3, *p4))
