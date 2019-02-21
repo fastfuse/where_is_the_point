@@ -11,7 +11,7 @@ class Config(object):
 class DevelopmentConfig(Config):
     DEBUG = True
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
-    MONGODB_URL = os.environ.get('MONGODB_URL', 'localhost')
+    MONGODB_URL = os.environ.get('MONGODB_URL', 'mongodb://localhost:27017/')
 
 
 class ProductionConfig(Config):

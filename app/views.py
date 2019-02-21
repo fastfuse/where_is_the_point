@@ -1,16 +1,13 @@
 import json
 import uuid
-from collections import namedtuple
 
 from flask import render_template, request, jsonify, make_response
+from flask_jwt_extended import create_access_token, create_refresh_token
+from werkzeug.security import generate_password_hash, check_password_hash
 
-from app import app, redis, points_db, utils
-from app.utils import hash_password
+from app import app, redis, points_db, utils, logger as log
 
 POINTS_KEY = "POINTS"
-
-LonLat = namedtuple("LonLat", ['longitude', 'latitude'])
-Point = namedtuple("Point", ['uid', 'longitude', 'latitude', 'data'])
 
 users_collection = points_db['users']
 
@@ -24,7 +21,7 @@ def index():
 @app.route('/api/create_point', methods=['POST'])
 def create_point():
     uid = str(uuid.uuid4())
-    point = Point(uid=uid, **request.json)
+    point = utils.Point(uid=uid, **request.json)
     redis.set(uid, json.dumps(point._asdict()))
     redis.geoadd(POINTS_KEY, point.longitude, point.latitude, point.uid)
 
@@ -33,7 +30,7 @@ def create_point():
 
 @app.route('/api/scan', methods=["POST"])
 def scan():
-    position = LonLat(**request.json)
+    position = utils.LonLat(**request.json)
 
     # TODO: create partial for georadius
     pong = redis.georadius(POINTS_KEY, position.longitude, position.latitude,
@@ -58,13 +55,13 @@ def register():
     # get the post data
     data = request.get_json()
 
-    # fetch user data
+    # get user from db
     user = users_collection.find_one({"username": data.get("username")})
 
     if not user:
         try:
             new_user = dict(username=data.get('username'),
-                            password_hash=hash_password(data.get('password')))
+                            password_hash=generate_password_hash(data.get('password')))
 
             new_user_id = users_collection.insert_one(new_user).inserted_id
 
@@ -73,7 +70,7 @@ def register():
             return make_response(jsonify(response)), 201
 
         except Exception as e:
-            # log.error(e)
+            log.error(e)
             response = utils.json_resp('Fail', 'Some error occurred. Please try again later')
             return make_response(jsonify(response)), 500
 
@@ -94,29 +91,28 @@ def login():
         # fetch user data
         user = users_collection.find_one({"username": data.get("username")})
 
-        if user:
-            if not user.check_password(data.get('password')):
-                response = utils.json_resp('Fail', 'Invalid password')
-                return make_response(jsonify(response)), 400
-
-            access_token = create_access_token(identity=user)
-            refresh_token = create_refresh_token(identity=user)
-
-            # store tokens to db
-            utils.store_token(access_token)
-            utils.store_token(refresh_token)
-
-            response = {'status': 'Success',
-                        'message': 'Successfully logged in',
-                        'access_token': access_token,
-                        'refresh_token': refresh_token
-                        }
-
-            return make_response(jsonify(response)), 200
-
-        else:
+        if not user:
             response = utils.json_resp('Fail', 'User does not exist')
             return make_response(jsonify(response)), 404
+
+        if not check_password_hash(user['password_hash'], data.get('password')):
+            response = utils.json_resp('Fail', 'Password did not match')
+            return make_response(jsonify(response)), 400
+
+        access_token = create_access_token(identity=user)
+        refresh_token = create_refresh_token(identity=user)
+
+        # store tokens
+        utils.store_token(access_token)
+        utils.store_token(refresh_token)
+
+        response = {'status': 'Success',
+                    'message': 'Successfully logged in',
+                    'access_token': access_token,
+                    'refresh_token': refresh_token
+                    }
+
+        return make_response(jsonify(response)), 200
 
     except Exception as e:
         log.error(e)

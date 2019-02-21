@@ -1,6 +1,8 @@
 import os
-from flask import Flask
+
 import redis as r
+from flask import Flask
+from flask_jwt_extended import JWTManager
 from pymongo import MongoClient
 
 app = Flask(__name__)
@@ -19,6 +21,8 @@ points_db = mongo_client.points_db
 # logger instance
 logger = app.logger
 
+# JWT stuff
+jwt = JWTManager(app)
 
 from app import views
 from app import models
