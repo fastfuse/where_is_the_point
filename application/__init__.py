@@ -5,8 +5,8 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 from pymongo import MongoClient
 
+# create application instance
 app = Flask(__name__)
-
 app.config.from_object(os.environ['APP_SETTINGS'])
 
 # redis instance
@@ -24,5 +24,10 @@ logger = app.logger
 # JWT stuff
 jwt = JWTManager(app)
 
-from app import views
-from app import models
+from .auth import auth_blueprint
+from .index import index_blueprint
+from .api import api_blueprint
+
+app.register_blueprint(auth_blueprint)
+app.register_blueprint(index_blueprint)
+app.register_blueprint(api_blueprint)

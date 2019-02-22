@@ -1,1 +1,1 @@
-Some useful app description
+Some useful application description

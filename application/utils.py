@@ -3,17 +3,10 @@ from collections import namedtuple
 
 from flask_jwt_extended import decode_token
 
-from app import points_db, jwt
+from application import points_db, jwt
+from application.exceptions import TokenNotFound
 
 jwt_tokens_collection = points_db['jwt_tokens']
-
-
-class TokenNotFound(Exception):
-    """
-    Indicates that a token could not be found in the database
-    """
-    pass
-
 
 # namedtuple to simplify creation of response messages
 Response = namedtuple('Response', ['status', 'message'])
@@ -113,4 +106,5 @@ def revoke_token(token_id, user):
         raise TokenNotFound("Could not find the token {}".format(token_id))
 
     # update
-    # https://api.mongodb.com/python/current/api/pymongo/collection.html#pymongo.collection.Collection.update_one
+    jwt_tokens_collection.find_one_and_update(dict(jti=token_id, user_identity=user),
+                                              {'$set': {"revoked": True}})

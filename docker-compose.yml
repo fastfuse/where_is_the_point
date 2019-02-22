@@ -4,7 +4,7 @@ services:
   app_prod:
     environment:
       - APP_SETTINGS=config.ProductionConfig
-      - FLASK_APP=app/__init__.py
+      - FLASK_APP=application/__init__.py
       - REDIS_URL=redis://redis:6379/0
 
     build:
@@ -13,13 +13,15 @@ services:
 
     depends_on:
       - redis
+      - mongodb
 
 
   app_dev:
     environment:
       - APP_SETTINGS=config.DevelopmentConfig
-      - FLASK_APP=app/__init__.py
+      - FLASK_APP=application/__init__.py
       - REDIS_URL=redis://redis:6379/0
+      - MONGODB_URL=mongodb://mongodb:27017/
 
     build:
      context: .
@@ -30,7 +32,12 @@ services:
 
     depends_on:
       - redis
+      - mongodb
 
 
   redis:
     image: 'redis:alpine'
+
+
+  mongodb:
+    image: 'mongo'
